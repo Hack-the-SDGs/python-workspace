@@ -1,0 +1,35 @@
+version = 1
+revision = 3
+requires-python = ">=3.14"
+
+[[package]]
+name = "javascript"
+version = "1!1.2.6"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/1d/e5/782b7cfba2491e96ff463e24fadb4486ce2bc226f2071e493a9caa07f345/javascript-1!1.2.6.tar.gz", hash = "sha256:442e885b54dd9a6afe797dd6d5c3c575ec38da02a7d16749bf315aad0fa620c9", size = 38508, upload-time = "2025-09-25T11:15:44.411Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/95/4f/43e4b0bd6b76930e921cf5d9357cefb8ace9a2615bf53c05ff2e314ec434/javascript-1!1.2.6-py3-none-any.whl", hash = "sha256:0c68af196d450715bb74e9a25f11db67435070d91ceaff5ef28c4b4c95235ebf", size = 34802, upload-time = "2025-09-25T11:15:42.142Z" },
+]
+
+[[package]]
+name = "minethon"
+version = "0.3.3"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "javascript" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/dd/f7/de4b0cae835e086c23c47f7c4973f2c4ef2f2138cfe6e750990a9814853b/minethon-0.3.3.tar.gz", hash = "sha256:7de0a9881fbabf6086a17ee835db2f1962d40c625135feab95665796d554bf43", size = 2253745, upload-time = "2026-06-29T19:11:08.909Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/ae/2e/1c0e50f51bb5893ed7a270e2afb33637aee0590b7f92c3c79a1e9fc28e43/minethon-0.3.3-py3-none-any.whl", hash = "sha256:9be84334e6cafdc0d280d6182d5859b316e6be8128245a89311985ce1527639a", size = 69583, upload-time = "2026-06-29T19:11:07.46Z" },
+]
+
+[[package]]
+name = "python-workspace"
+version = "0.1.0"
+source = { virtual = "." }
+dependencies = [
+    { name = "minethon" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "minethon", specifier = ">=0.3.3" }]
