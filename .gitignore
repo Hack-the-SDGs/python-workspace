@@ -747,3 +747,4 @@ FodyWeavers.xsd
 !.idea/pyProjectModel.xml
 !.idea/python-workspace.iml
 !.idea/modules.xml
+!.idea/setup.ps1
