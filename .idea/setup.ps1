@@ -19,6 +19,12 @@ function Write-Step { param([string]$Msg) Write-Host "`n========== $Msg ========
 function Write-Ok   { param([string]$Msg) Write-Host "[OK] $Msg" -ForegroundColor Green }
 function Write-Note { param([string]$Msg) Write-Host "[!]  $Msg" -ForegroundColor Yellow }
 
+# 寫檔一律不加 BOM：Windows 對含 BOM 的 .json 會解析失敗
+function Set-TextNoBom {
+    param([string]$Path, [string]$Content)
+    [System.IO.File]::WriteAllText($Path, $Content, (New-Object System.Text.UTF8Encoding($false)))
+}
+
 # 從登錄檔重新載入 PATH，讓「剛用 winget 裝好的 git / uv」在本 session 立即可用
 function Update-SessionPath {
     $machine = [Environment]::GetEnvironmentVariable('Path','Machine')
@@ -28,10 +34,14 @@ function Update-SessionPath {
 
 function Install-WithWinget {
     param([string]$Id)
+    # 已安裝就靜默跳過（winget list -e 找到回 0），重複執行不再重裝
+    winget list -e --id $Id --accept-source-agreements *> $null
+    if ($LASTEXITCODE -eq 0) { Write-Ok "$Id 已安裝，略過"; return }
+
     Write-Step "安裝 $Id"
     winget install -e --id $Id --source winget --accept-package-agreements --accept-source-agreements
     if ($LASTEXITCODE -eq 0) { Write-Ok "$Id 安裝完成" }
-    else { Write-Note "$Id winget 回傳碼 $LASTEXITCODE（多半是「已安裝」或使用者取消，可忽略）" }
+    else { Write-Note "$Id winget 回傳碼 $LASTEXITCODE（多半是使用者取消，可忽略）" }
 }
 
 # 以「目前登入的桌面使用者」權限執行指定 .ps1（即使本腳本以系統管理員身分執行也會降權）。
@@ -103,7 +113,7 @@ Write-Step '準備使用者權限初始化腳本'
 New-Item -ItemType Directory -Path $ShareDir -Force | Out-Null
 $userInit = Join-Path $ShareDir 'user-init.ps1'
 # ponytail: 用單引號 here-string（不做內插），$ProjectDir 等變數在子腳本自己定義；設定值與上方常數重複但這是 set-once 常數，可接受
-@"
+$userInitContent = @"
 `$ProjectDir = '$ProjectDir'
 `$RepoUrl    = '$RepoUrl'
 `$NotesUrl   = '$NotesUrl'
@@ -149,7 +159,8 @@ if ($pycharm) {
 } else {
     Write-Host '[!] 找不到 PyCharm，請手動開啟並打開 D:\python-workspace（剛裝完可能需重登才在預期路徑）'
 }
-'@ | Set-Content -Path $userInit -Encoding UTF8
+'@
+Set-TextNoBom -Path $userInit -Content $userInitContent
 
 # ---------- Step 5：以使用者權限執行初始化 ----------
 Write-Step '以使用者權限執行 clone / uv sync / 開 PyCharm'
