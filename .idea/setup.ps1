@@ -29,7 +29,7 @@ function Update-SessionPath {
 function Install-WithWinget {
     param([string]$Id)
     Write-Step "安裝 $Id"
-    winget install -e --id $Id --accept-package-agreements --accept-source-agreements
+    winget install -e --id $Id --accept-package-agreements --accept-source-agreements --source winget
     if ($LASTEXITCODE -eq 0) { Write-Ok "$Id 安裝完成" }
     else { Write-Note "$Id winget 回傳碼 $LASTEXITCODE（多半是「已安裝」或使用者取消，可忽略）" }
 }
