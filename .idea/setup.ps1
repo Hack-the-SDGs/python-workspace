@@ -8,6 +8,7 @@ $ErrorActionPreference = 'Continue'  # 各步驟自行容錯，不整段中止
 
 # ---------- 設定區 ----------
 $TempDir    = Join-Path ([Environment]::GetFolderPath('Desktop')) 'Hack-the-SDGs'
+$ShareDir   = Join-Path $env:PUBLIC 'Hack-the-SDGs'  # 跨帳戶共用：降權後的使用者工作也讀得到
 $SetupUrl   = 'https://raw.githubusercontent.com/Hack-the-SDGs/minethon/main/pc_setup/setup.ps1'
 $RepoUrl    = 'https://github.com/Hack-the-SDGs/python-workspace'
 $ProjectDir = 'D:\python-workspace'
@@ -31,6 +32,32 @@ function Install-WithWinget {
     winget install -e --id $Id --accept-package-agreements --accept-source-agreements
     if ($LASTEXITCODE -eq 0) { Write-Ok "$Id 安裝完成" }
     else { Write-Note "$Id winget 回傳碼 $LASTEXITCODE（多半是「已安裝」或使用者取消，可忽略）" }
+}
+
+# 以「目前登入的桌面使用者」權限執行指定 .ps1（即使本腳本以系統管理員身分執行也會降權）。
+# 目的：讓 uv sync 建立的 .venv / uv 快取落在該使用者帳戶，PyCharm 才讀得到；
+# 若用系統管理員（或其他 Administrator 帳戶）執行 uv sync，IDE 會抓不到環境。
+function Invoke-AsInteractiveUser {
+    param([Parameter(Mandatory)][string]$File)
+    $user = (Get-CimInstance Win32_ComputerSystem).UserName  # 目前互動桌面使用者
+    if (-not $user) { Write-Note '抓不到互動使用者，改用目前權限直接執行'; & $File; return }
+
+    $log  = Join-Path $ShareDir 'user-init.log'
+    $task = 'HackSDGs-UserInit'
+    $action    = New-ScheduledTaskAction -Execute 'powershell.exe' `
+        -Argument "-NoProfile -ExecutionPolicy Bypass -Command `"& '$File' *> '$log'`""
+    $principal = New-ScheduledTaskPrincipal -UserId $user -LogonType Interactive -RunLevel Limited
+    Register-ScheduledTask -TaskName $task -Action $action -Principal $principal -Force | Out-Null
+    Start-ScheduledTask -TaskName $task
+
+    # ponytail: naive 輪詢等它跑完；uv sync 遠比 2 秒久所以夠用，卡住的話上限 10 分鐘
+    Start-Sleep -Seconds 2
+    $waited = 0
+    while ((Get-ScheduledTask -TaskName $task).State -eq 'Running' -and $waited -lt 600) {
+        Start-Sleep -Seconds 3; $waited += 3
+    }
+    Unregister-ScheduledTask -TaskName $task -Confirm:$false
+    if (Test-Path $log) { Get-Content $log | Write-Host }
 }
 
 # ---------- 前置檢查 ----------
@@ -69,40 +96,46 @@ Write-Step '重新載入環境變數 PATH'
 Update-SessionPath
 Write-Ok 'PATH 已更新（git / uv 應可直接使用）'
 
-# ---------- Step 4：開啟課堂筆記 ----------
-Write-Step '開啟 HackMD 課堂筆記'
-Start-Process $NotesUrl
-Write-Ok $NotesUrl
+# ---------- Step 4：產生「使用者權限初始化」腳本 ----------
+# 開筆記、clone、uv sync、開 PyCharm 全部改用桌面使用者權限跑，
+# 避免以系統管理員身分建立 .venv 導致 PyCharm 讀不到環境。
+Write-Step '準備使用者權限初始化腳本'
+New-Item -ItemType Directory -Path $ShareDir -Force | Out-Null
+$userInit = Join-Path $ShareDir 'user-init.ps1'
+# ponytail: 用單引號 here-string（不做內插），$ProjectDir 等變數在子腳本自己定義；設定值與上方常數重複但這是 set-once 常數，可接受
+@"
+`$ProjectDir = '$ProjectDir'
+`$RepoUrl    = '$RepoUrl'
+`$NotesUrl   = '$NotesUrl'
+"@ + @'
 
-# ---------- Step 5：取得專案 + uv sync ----------
-Write-Step "取得課程專案至 $ProjectDir"
+Write-Host '開啟 HackMD 課堂筆記'
+Start-Process $NotesUrl
+
 if (-not (Test-Path 'D:\')) {
-    Write-Note '找不到 D:\ 磁碟，無法 clone 至 D:\python-workspace，請確認此機器有 D 槽。'
+    Write-Host '[!] 找不到 D:\ 磁碟，略過 clone / uv sync'
 } elseif (-not (Get-Command git -ErrorAction SilentlyContinue)) {
-    Write-Note 'git 尚未就緒（可能需重開 PowerShell），略過 clone。'
+    Write-Host '[!] git 尚未就緒（可能需重開 PowerShell），略過 clone'
 } else {
     if (Test-Path (Join-Path $ProjectDir '.git')) {
-        Write-Note "$ProjectDir 已存在，改為 git pull 更新"
+        Write-Host "$ProjectDir 已存在，改為 git pull 更新"
         git -C $ProjectDir pull
     } elseif (Test-Path $ProjectDir) {
-        Write-Note "$ProjectDir 已存在但不是 git 專案，略過 clone（請人工確認）"
+        Write-Host "[!] $ProjectDir 已存在但不是 git 專案，略過 clone"
     } else {
         git clone $RepoUrl $ProjectDir
     }
 
     if ((Test-Path $ProjectDir) -and (Get-Command uv -ErrorAction SilentlyContinue)) {
-        Write-Step '執行 uv sync（安裝相依套件）'
+        Write-Host '執行 uv sync（安裝相依套件）'
         Push-Location $ProjectDir
         uv sync
         Pop-Location
-        Write-Ok 'uv sync 完成'
     } else {
-        Write-Note 'uv 尚未就緒或專案不存在，略過 uv sync。'
+        Write-Host '[!] uv 尚未就緒或專案不存在，略過 uv sync'
     }
 }
 
-# ---------- Step 6：以 PyCharm 開啟專案 ----------
-Write-Step '以 PyCharm 開啟專案'
 $pycharm = Get-ChildItem -Path @(
     "$env:ProgramFiles\JetBrains",
     "${env:ProgramFiles(x86)}\JetBrains",
@@ -112,9 +145,15 @@ $pycharm = Get-ChildItem -Path @(
 
 if ($pycharm) {
     Start-Process -FilePath $pycharm.FullName -ArgumentList "`"$ProjectDir`""
-    Write-Ok "已用 PyCharm 開啟 $ProjectDir"
+    Write-Host "已用 PyCharm 開啟 $ProjectDir"
 } else {
-    Write-Note '找不到 PyCharm 執行檔，請手動開啟 PyCharm 並打開 D:\python-workspace（剛裝完可能需重登或重開機才在預期路徑）。'
+    Write-Host '[!] 找不到 PyCharm，請手動開啟並打開 D:\python-workspace（剛裝完可能需重登才在預期路徑）'
 }
+'@ | Set-Content -Path $userInit -Encoding UTF8
+
+# ---------- Step 5：以使用者權限執行初始化 ----------
+Write-Step '以使用者權限執行 clone / uv sync / 開 PyCharm'
+Invoke-AsInteractiveUser -File $userInit
+Write-Ok '使用者權限初始化結束'
 
 Write-Host "`n全部步驟結束。" -ForegroundColor Green
