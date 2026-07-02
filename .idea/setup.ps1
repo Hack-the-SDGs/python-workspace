@@ -50,7 +50,7 @@ $setupLocal = Join-Path $TempDir 'setup.ps1'
 try {
     Invoke-WebRequest -Uri $SetupUrl -OutFile $setupLocal -UseBasicParsing
     Unblock-File $setupLocal
-    Write-Note '接下來會進入初始化腳本，過程中「需要你手動輸入密碼」，輸入完成後腳本才會繼續。'
+    Write-Note '接下來會進入初始化腳本'
     & $setupLocal
     Write-Ok '初始化腳本執行結束'
 } catch {
@@ -61,6 +61,7 @@ try {
 Install-WithWinget 'Mojang.MinecraftLauncher'
 Install-WithWinget 'JetBrains.PyCharm.Community'
 Install-WithWinget 'Git.Git'
+Install-WithWinget 'OpenJS.NodeJS.LTS'
 Install-WithWinget 'astral-sh.uv'
 
 # ---------- Step 3：更新本 session 的 PATH ----------
