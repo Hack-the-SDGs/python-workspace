@@ -13,14 +13,13 @@ wheels = [
 
 [[package]]
 name = "minethon"
-version = "0.3.9"
+version = "0.3.10"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "javascript" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/f6/2a/5526802afe709c813df1e63071b89e815cd7dc21c938de6c7f1b99630688/minethon-0.3.9.tar.gz", hash = "sha256:9ab62eb2dcfe460c42370e3184de9e6db525afe45abfe1f35d6c5864a6c3dde2", size = 2257109, upload-time = "2026-07-02T03:36:24.501Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/dc/15/01e4cb420d7c1811220e8040e889730a07a945b8dd93de228430b5fa381f/minethon-0.3.9-py3-none-any.whl", hash = "sha256:71b54786aeb622dcf6552a0093227564104000be527bb8fac868c519eadd4092", size = 72140, upload-time = "2026-07-02T03:36:23.326Z" },
+    { url = "https://files.pythonhosted.org/packages/75/06/2f70a24ea4852f21241319cde7b15d534bbade33dc279df3536c3f9a95a1/minethon-0.3.10-py3-none-any.whl", hash = "sha256:e4bbfd288aec1ceba5cc88bca28160946c144b73b33a16d9bc3df259af6d0730", size = 72246, upload-time = "2026-07-02T04:43:24.771Z" },
 ]
 
 [[package]]
