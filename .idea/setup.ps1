@@ -133,6 +133,8 @@ Install-WithWinget 'JetBrains.PyCharm.Community'
 Install-WithWinget 'Git.Git'
 Install-WithWinget 'OpenJS.NodeJS.LTS'
 Install-WithWinget 'astral-sh.uv'
+Install-WithWinget 'SST.opencode'
+Install-WithWinget 'SST.OpenCodeDesktop'
 
 # ---------- Step 3: refresh PATH for this session ----------
 Write-Step 'Reloading the PATH environment variable'
@@ -232,5 +234,92 @@ if ($hasVmware) {
 } else {
     Write-Note "VMware installer missing, run it manually from $TempDir"
 }
+
+# ---------- Step 8: add English (US) keyboard without disturbing existing input methods ----------
+Write-Step 'Adding English (US) language and keyboard'
+
+$currentList = Get-WinUserLanguageList
+
+Write-Host "$logTag Current languages:"
+foreach ($lang in $currentList) {
+    $tips = ($lang.InputMethodTips -join ', ')
+    if (-not $tips) { $tips = '(default)' }
+    Write-Host "  $($lang.LanguageTag)  IME: $tips"
+}
+
+$hasEnUS = $currentList | Where-Object { $_.LanguageTag -eq 'en-US' }
+if ($hasEnUS) {
+    Write-Ok 'en-US is already present, no changes needed'
+} else {
+    # Rebuild the list, explicitly preserving every InputMethodTip so
+    # Set-WinUserLanguageList cannot silently reset CJK input methods.
+    $newList = $null
+
+    for ($i = 0; $i -lt $currentList.Count; $i++) {
+        $src = $currentList[$i]
+
+        if ($i -eq 0) {
+            $newList = New-WinUserLanguageList $src.LanguageTag
+        } else {
+            $newList.Add($src.LanguageTag)
+        }
+
+        $dest = $newList[$i]
+
+        if ($src.InputMethodTips.Count -gt 0) {
+            $dest.InputMethodTips.Clear()
+            foreach ($tip in $src.InputMethodTips) {
+                $dest.InputMethodTips.Add($tip)
+            }
+        }
+
+        $dest.Handwriting = $src.Handwriting
+    }
+
+    $newList.Add('en-US')
+
+    Write-Host 'New language list to apply:'
+    foreach ($lang in $newList) {
+        $tips = ($lang.InputMethodTips -join ', ')
+        if (-not $tips) { $tips = '(default)' }
+        Write-Host "  $($lang.LanguageTag)  IME: $tips"
+    }
+
+    Set-WinUserLanguageList $newList -Force
+    Start-Sleep -Seconds 1
+    Write-Ok 'en-US added'
+}
+
+# Display final keyboard summary
+$finalList = Get-WinUserLanguageList
+
+Write-Host ''
+Write-Host '============================================================' -ForegroundColor Green
+Write-Host '  Final language & keyboard configuration' -ForegroundColor Green
+Write-Host '============================================================' -ForegroundColor Green
+Write-Host ''
+
+$index = 1
+foreach ($lang in $finalList) {
+    $displayName = $lang.LocalizedName
+    if (-not $displayName) { $displayName = $lang.LanguageTag }
+
+    Write-Host "  [$index] Language : $displayName ($($lang.LanguageTag))" -ForegroundColor Cyan
+
+    if ($lang.InputMethodTips.Count -gt 0) {
+        foreach ($tip in $lang.InputMethodTips) {
+            Write-Host "       Keyboard : $tip" -ForegroundColor White
+        }
+    } else {
+        Write-Host '       Keyboard : (system default)' -ForegroundColor White
+    }
+
+    Write-Host ''
+    $index++
+}
+
+Write-Host "  System display language : $((Get-WinSystemLocale).DisplayName)" -ForegroundColor Yellow
+Write-Host ''
+Write-Host '============================================================' -ForegroundColor Green
 
 Write-Host "`nAll steps complete." -ForegroundColor Green
