@@ -16,7 +16,8 @@ $TempDir    = Join-Path ([Environment]::GetFolderPath('Desktop')) 'Hack-the-SDGs
 $ShareDir   = Join-Path $env:PUBLIC 'Hack-the-SDGs'  # cross-account: readable by the de-elevated user task
 $SetupUrl   = 'https://raw.githubusercontent.com/Hack-the-SDGs/minethon/main/pc_setup/setup.ps1'
 $RepoUrl    = 'https://github.com/Hack-the-SDGs/python-workspace'
-$ProjectDir = 'D:\python-workspace'
+$NoDDrive   = -not (Test-Path 'D:\')
+$ProjectDir = if ($NoDDrive) { Join-Path ([Environment]::GetFolderPath('Desktop')) 'python-workspace' } else { 'D:\python-workspace' }
 $NotesUrl   = 'https://hackmd.io/@NTUST-CSIE-CAMP/book'
 $VmwareUrl  = 'https://drive.smashit.tw/public.php/dav/files/HMiX8wsbcPpk2KR/?accept=zip'
 $VmwareExe  = Join-Path $TempDir 'VMware-Workstation-Full-26H1-25388281.exe'
@@ -165,9 +166,7 @@ $userInitContent = @"
 Write-Host 'Opening the HackMD course notes'
 Start-Process $NotesUrl
 
-if (-not (Test-Path 'D:\')) {
-    Write-Host '[!] D:\ drive not found, skipping clone / uv sync'
-} elseif (-not (Get-Command git -ErrorAction SilentlyContinue)) {
+if (-not (Get-Command git -ErrorAction SilentlyContinue)) {
     Write-Host '[!] git is not ready yet (PowerShell may need a restart), skipping clone'
 } else {
     if (Test-Path (Join-Path $ProjectDir '.git')) {
@@ -211,7 +210,7 @@ if ($pycharm) {
     Start-Process -FilePath $pycharm.FullName -ArgumentList "`"$ProjectDir`""
     Write-Host "Opened $ProjectDir in PyCharm"
 } else {
-    Write-Host '[!] PyCharm not found, please open D:\python-workspace manually (a fresh install may need a re-login before it lands on the expected path)'
+    Write-Host "[!] PyCharm not found, please open $ProjectDir manually (a fresh install may need a re-login before it lands on the expected path)"
 }
 '@
 Set-TextNoBom -Path $userInit -Content $userInitContent
@@ -321,5 +320,14 @@ foreach ($lang in $finalList) {
 Write-Host "  System display language : $((Get-WinSystemLocale).DisplayName)" -ForegroundColor Yellow
 Write-Host ''
 Write-Host '============================================================' -ForegroundColor Green
+
+if ($NoDDrive) {
+    Write-Host ''
+    Write-Host '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!' -ForegroundColor Red
+    Write-Host '  WARNING: D:\ drive was not found!' -ForegroundColor Red
+    Write-Host "  Project files were placed on the Desktop instead:" -ForegroundColor Red
+    Write-Host "    $ProjectDir" -ForegroundColor Red
+    Write-Host '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!' -ForegroundColor Red
+}
 
 Write-Host "`nAll steps complete." -ForegroundColor Green
