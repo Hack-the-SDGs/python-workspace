@@ -749,3 +749,4 @@ FodyWeavers.xsd
 !.idea/modules.xml
 !.idea/setup.ps1
 !.idea/mc_preinstall.py
+!.idea/favicon.ico

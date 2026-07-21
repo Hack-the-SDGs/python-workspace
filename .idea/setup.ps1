@@ -163,6 +163,7 @@ $userInitContent = @"
 `$RepoUrl    = '$RepoUrl'
 `$NotesUrl   = '$NotesUrl'
 `$McVersion  = '$McVersion'
+`$TempDir    = '$TempDir'
 "@ + @'
 
 Write-Host 'Opening the HackMD course notes'
@@ -188,6 +189,24 @@ if (-not (Get-Command git -ErrorAction SilentlyContinue)) {
     } else {
         Write-Host '[!] uv is not ready or the project is missing, skipping uv sync'
     }
+}
+
+# Set custom folder icon for the desktop working directory
+$faviconSrc = Join-Path $ProjectDir '.idea\favicon.ico'
+if ((Test-Path $faviconSrc) -and (Test-Path $TempDir)) {
+    $faviconDst = Join-Path $TempDir 'favicon.ico'
+    Copy-Item -Path $faviconSrc -Destination $faviconDst -Force
+    Set-ItemProperty -Path $faviconDst -Name Attributes -Value ([IO.FileAttributes]::Hidden)
+
+    $desktopIni = Join-Path $TempDir 'desktop.ini'
+    [System.IO.File]::WriteAllText($desktopIni, "[.ShellClassInfo]`r`nIconResource=favicon.ico,0`r`n", (New-Object System.Text.UTF8Encoding($false)))
+    Set-ItemProperty -Path $desktopIni -Name Attributes -Value ([IO.FileAttributes]'Hidden, System')
+
+    attrib +S $TempDir
+    ie4uinit.exe -show
+    Write-Host "[OK] Folder icon applied to $TempDir"
+} else {
+    Write-Host '[!] favicon.ico or working directory not found, skipping folder icon'
 }
 
 # Minecraft profile (mods / shaderpacks / servers.dat / options.txt) ships inside the repo
