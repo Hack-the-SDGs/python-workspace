@@ -748,3 +748,4 @@ FodyWeavers.xsd
 !.idea/python-workspace.iml
 !.idea/modules.xml
 !.idea/setup.ps1
+!.idea/mc_preinstall.py

@@ -23,6 +23,7 @@ $VmwareUrl  = 'https://drive.smashit.tw/public.php/dav/files/HMiX8wsbcPpk2KR/?ac
 $VmwareExe  = Join-Path $TempDir 'VMware-Workstation-Full-26H1-25388281.exe'
 $HmclUrl    = 'https://github.com/Hack-the-SDGs/HMCL/releases/download/v3.14.5/HMCL-3.14.5.exe'
 $HmclExe    = Join-Path $TempDir 'HMCL-3.14.5.exe'
+$McVersion  = '26.1.2'
 
 # ponytail: the shortcut name is Chinese by request; build it from code points to keep this file ASCII. 0x5B78 0x54E1 0x624B 0x518A = "student handbook"
 $ManualUrlFile = Join-Path $TempDir ((-join [char[]](0x5B78, 0x54E1, 0x624B, 0x518A)) + '.url')
@@ -161,6 +162,7 @@ $userInitContent = @"
 `$ProjectDir = '$ProjectDir'
 `$RepoUrl    = '$RepoUrl'
 `$NotesUrl   = '$NotesUrl'
+`$McVersion  = '$McVersion'
 "@ + @'
 
 Write-Host 'Opening the HackMD course notes'
@@ -197,6 +199,22 @@ if (Test-Path $mcSource) {
     Write-Host "Copied the Minecraft profile to $mcTarget"
 } else {
     Write-Host "[!] $mcSource not found, skipping the Minecraft profile"
+}
+
+# Pre-install Minecraft game files (client JAR, libraries, assets, Java runtime)
+# so the launcher skips its own download when 60 students all press Play at once
+$mcPreinstall = Join-Path $ProjectDir '.idea\mc_preinstall.py'
+if ((Test-Path $mcPreinstall) -and (Get-Command uv -ErrorAction SilentlyContinue)) {
+    Write-Host "Pre-installing Minecraft $McVersion game files (this takes a few minutes)..."
+    $uvPath = (Get-Command uv).Source
+    & $uvPath run --no-project $mcPreinstall --version $McVersion --output $mcTarget --platform windows-x64
+    if ($LASTEXITCODE -eq 0) {
+        Write-Host "[OK] Minecraft $McVersion game files pre-installed"
+    } else {
+        Write-Host "[!] Minecraft pre-install exited with code $LASTEXITCODE (re-run to retry)"
+    }
+} else {
+    Write-Host '[!] mc_preinstall.py or uv not found, skipping Minecraft pre-install'
 }
 
 $pycharm = Get-ChildItem -Path @(
