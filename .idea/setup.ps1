@@ -194,6 +194,9 @@ if (-not (Get-Command git -ErrorAction SilentlyContinue)) {
 # Set custom folder icon for the desktop working directory
 $faviconSrc = Join-Path $ProjectDir '.idea\favicon.ico'
 if ((Test-Path $faviconSrc) -and (Test-Path $TempDir)) {
+    $oldFavicon = Join-Path $TempDir 'favicon0716110357.ico'
+    if (Test-Path $oldFavicon) { Remove-Item $oldFavicon -Force; Write-Host 'Removed legacy favicon0716110357.ico' }
+
     $faviconDst = Join-Path $TempDir 'favicon.ico'
     Copy-Item -Path $faviconSrc -Destination $faviconDst -Force
     Set-ItemProperty -Path $faviconDst -Name Attributes -Value ([IO.FileAttributes]::Hidden)
