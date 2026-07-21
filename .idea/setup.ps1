@@ -202,10 +202,14 @@ if ((Test-Path $faviconSrc) -and (Test-Path $TempDir)) {
     Set-ItemProperty -Path $faviconDst -Name Attributes -Value ([IO.FileAttributes]::Hidden)
 
     $desktopIni = Join-Path $TempDir 'desktop.ini'
+    # Clear attributes first so the file is writable (an existing desktop.ini may be Hidden+System)
+    if (Test-Path $desktopIni) { attrib -H -S $desktopIni }
     [System.IO.File]::WriteAllText($desktopIni, "[.ShellClassInfo]`r`nIconResource=favicon.ico,0`r`n", (New-Object System.Text.UTF8Encoding($false)))
-    Set-ItemProperty -Path $desktopIni -Name Attributes -Value ([IO.FileAttributes]'Hidden, System')
+    attrib +H +S $desktopIni
 
-    attrib +S $TempDir
+    # Folder needs ReadOnly for Explorer to read desktop.ini; clear System first to avoid conflicts
+    attrib -S $TempDir
+    attrib +R $TempDir
     ie4uinit.exe -show
     Write-Host "[OK] Folder icon applied to $TempDir"
 } else {
