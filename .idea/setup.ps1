@@ -24,6 +24,8 @@ $VmwareExe  = Join-Path $TempDir 'VMware-Workstation-Full-26H1-25388281.exe'
 $HmclUrl    = 'https://github.com/Hack-the-SDGs/HMCL/releases/download/v3.14.5/HMCL-3.14.5.exe'
 $HmclExe    = Join-Path $TempDir 'HMCL-3.14.5.exe'
 $McVersion  = '26.1.2'
+$MineaiRepoUrl = 'https://github.com/Hack-the-SDGs/Mineai-toolkit'  # MCP server (Minecraft AI class)
+$MineaiDir     = Join-Path $TempDir 'Mineai-toolkit'                # clone lives inside the Hack-the-SDGs folder
 
 # ponytail: the shortcut name is Chinese by request; build it from code points to keep this file ASCII. 0x5B78 0x54E1 0x624B 0x518A = "student handbook"
 $ManualUrlFile = Join-Path $TempDir ((-join [char[]](0x5B78, 0x54E1, 0x624B, 0x518A)) + '.url')
@@ -263,6 +265,44 @@ Set-TextNoBom -Path $userInit -Content $userInitContent
 Write-Step 'Running clone / uv sync / Minecraft profile / PyCharm as the desktop user'
 Invoke-AsInteractiveUser -File $userInit
 Write-Ok 'User-privilege init finished'
+
+# ---------- Step 6b: mineai-toolkit MCP server (clone + uv sync, as the desktop user) ----------
+# Same desktop-user pattern as Step 5/6 so .venv and the uv cache land under the student
+# account, not the administrator's. Starts with start_mcp.cmd inside the cloned repo.
+Write-Step 'Preparing the mineai-toolkit MCP init script'
+$mcpInit = Join-Path $ShareDir 'mcp-init.ps1'
+$mcpInitContent = @"
+`$MineaiDir     = '$MineaiDir'
+`$MineaiRepoUrl = '$MineaiRepoUrl'
+"@ + @'
+
+if (-not (Get-Command git -ErrorAction SilentlyContinue)) {
+    Write-Host '[!] git is not ready yet (PowerShell may need a restart), skipping mineai-toolkit clone'
+} else {
+    if (Test-Path (Join-Path $MineaiDir '.git')) {
+        Write-Host "$MineaiDir already exists, running git pull instead"
+        git -C $MineaiDir pull
+    } elseif (Test-Path $MineaiDir) {
+        Write-Host "[!] $MineaiDir exists but is not a git repository, skipping clone"
+    } else {
+        git clone $MineaiRepoUrl $MineaiDir
+    }
+
+    if ((Test-Path $MineaiDir) -and (Get-Command uv -ErrorAction SilentlyContinue)) {
+        Write-Host 'Running uv sync for mineai-toolkit (fetches Python 3.14 on first run, this takes a few minutes)'
+        Push-Location $MineaiDir
+        uv sync
+        Pop-Location
+    } else {
+        Write-Host '[!] uv is not ready or mineai-toolkit is missing, skipping uv sync'
+    }
+}
+'@
+Set-TextNoBom -Path $mcpInit -Content $mcpInitContent
+
+Write-Step 'Running mineai-toolkit clone / uv sync as the desktop user'
+Invoke-AsInteractiveUser -File $mcpInit
+Write-Ok 'mineai-toolkit init finished'
 
 # ---------- Step 7: VMware Workstation installer (elevated, blocking GUI, so it goes last) ----------
 if ($hasVmware) {
