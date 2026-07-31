@@ -186,8 +186,9 @@ if (-not (Get-Command git -ErrorAction SilentlyContinue)) {
     }
 
     if ((Test-Path $ProjectDir) -and (Get-Command uv -ErrorAction SilentlyContinue)) {
-        Write-Host 'Running uv sync (installing dependencies)'
+        Write-Host 'Running uv lock --upgrade + uv sync (installing latest dependencies)'
         Push-Location $ProjectDir
+        uv lock --upgrade
         uv sync
         Pop-Location
     } else {
