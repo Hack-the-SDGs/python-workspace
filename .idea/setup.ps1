@@ -256,6 +256,23 @@ if ((Test-Path $mcPreinstall) -and (Get-Command uv -ErrorAction SilentlyContinue
     Write-Host '[!] mc_preinstall.py or uv not found, skipping Minecraft pre-install'
 }
 
+# Discord installs per-user into LOCALAPPDATA, so it must run here, not elevated
+winget list -e --id Discord.Discord --accept-source-agreements *> $null
+if ($LASTEXITCODE -eq 0) {
+    Write-Host 'Discord already installed, skipping'
+} else {
+    Write-Host 'Installing Discord'
+    winget install -e --id Discord.Discord --source winget --accept-package-agreements --accept-source-agreements
+}
+# Reuse the Start Menu shortcut the installer creates (correct target and icon)
+$discordLnk = Join-Path $env:APPDATA 'Microsoft\Windows\Start Menu\Programs\Discord Inc\Discord.lnk'
+if (Test-Path $discordLnk) {
+    Copy-Item $discordLnk (Join-Path $TempDir 'Discord.lnk') -Force
+    Write-Host "[OK] Discord shortcut placed in $TempDir"
+} else {
+    Write-Host '[!] Discord Start Menu shortcut not found, skipping the Discord shortcut'
+}
+
 $pycharm = Get-ChildItem -Path @(
     "$env:ProgramFiles\JetBrains",
     "${env:ProgramFiles(x86)}\JetBrains",
