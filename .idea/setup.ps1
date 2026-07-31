@@ -174,11 +174,13 @@ Start-Process $NotesUrl
 if (-not (Get-Command git -ErrorAction SilentlyContinue)) {
     Write-Host '[!] git is not ready yet (PowerShell may need a restart), skipping clone'
 } else {
-    if (Test-Path (Join-Path $ProjectDir '.git')) {
-        Write-Host "$ProjectDir already exists, running git pull instead"
-        git -C $ProjectDir pull
-    } elseif (Test-Path $ProjectDir) {
-        Write-Host "[!] $ProjectDir exists but is not a git repository, skipping clone"
+    # Fresh clone on every run so the workspace always matches the latest remote exactly
+    if (Test-Path $ProjectDir) {
+        Write-Host "Removing the old $ProjectDir for a fresh clone"
+        Remove-Item $ProjectDir -Recurse -Force -ErrorAction SilentlyContinue
+    }
+    if (Test-Path $ProjectDir) {
+        Write-Host "[!] Could not fully remove $ProjectDir (a file is likely locked, e.g. by PyCharm); close it and re-run"
     } else {
         git clone $RepoUrl $ProjectDir
     }
