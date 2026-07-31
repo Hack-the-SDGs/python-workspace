@@ -328,7 +328,8 @@ $pycharm = Get-ChildItem -Path @(
 ) -Recurse -Filter 'pycharm64.exe' -ErrorAction SilentlyContinue | Select-Object -First 1
 
 if ($pycharm -and (Test-Path $MineaiDir)) {
-    $lnkPath = Join-Path ([Environment]::GetFolderPath('Desktop')) 'PyCharm AI.lnk'
+    # Parent of $MineaiDir is the Hack-the-SDGs folder created in Step 0.
+    $lnkPath = Join-Path (Split-Path $MineaiDir -Parent) 'PyCharm AI.lnk'
     try {
         $wsh = New-Object -ComObject WScript.Shell
         $lnk = $wsh.CreateShortcut($lnkPath)
