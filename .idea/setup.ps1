@@ -234,6 +234,9 @@ $mcSource = Join-Path $ProjectDir '.idea\minecraft'
 $mcTarget = Join-Path $env:APPDATA '.minecraft'
 if (Test-Path $mcSource) {
     New-Item -ItemType Directory -Path $mcTarget -Force | Out-Null
+    # Repo state must win: wipe config/ and options.txt so in-game edits do not survive re-runs
+    Remove-Item (Join-Path $mcTarget 'config') -Recurse -Force -ErrorAction SilentlyContinue
+    Remove-Item (Join-Path $mcTarget 'options.txt') -Force -ErrorAction SilentlyContinue
     Copy-Item -Path (Join-Path $mcSource '*') -Destination $mcTarget -Recurse -Force
     Write-Host "Copied the Minecraft profile to $mcTarget"
 } else {
