@@ -163,13 +163,9 @@ $userInit = Join-Path $ShareDir 'user-init.ps1'
 $userInitContent = @"
 `$ProjectDir = '$ProjectDir'
 `$RepoUrl    = '$RepoUrl'
-`$NotesUrl   = '$NotesUrl'
 `$McVersion  = '$McVersion'
 `$TempDir    = '$TempDir'
 "@ + @'
-
-Write-Host 'Opening the HackMD course notes'
-Start-Process $NotesUrl
 
 if (-not (Get-Command git -ErrorAction SilentlyContinue)) {
     Write-Host '[!] git is not ready yet (PowerShell may need a restart), skipping clone'
