@@ -316,6 +316,35 @@ if (-not (Get-Command git -ErrorAction SilentlyContinue)) {
         Write-Host '[!] uv is not ready or mineai-toolkit is missing, skipping uv sync'
     }
 }
+
+# Desktop shortcut: open the mineai-toolkit folder in PyCharm.
+# pycharm64.exe is discovered (same paths as the python-workspace launch) so the
+# shortcut keeps working after PyCharm updates its version-numbered folder.
+$pycharm = Get-ChildItem -Path @(
+    "$env:ProgramFiles\JetBrains",
+    "${env:ProgramFiles(x86)}\JetBrains",
+    "$env:LOCALAPPDATA\Programs\JetBrains",
+    "$env:LOCALAPPDATA\JetBrains\Toolbox\apps"
+) -Recurse -Filter 'pycharm64.exe' -ErrorAction SilentlyContinue | Select-Object -First 1
+
+if ($pycharm -and (Test-Path $MineaiDir)) {
+    $lnkPath = Join-Path ([Environment]::GetFolderPath('Desktop')) 'PyCharm AI.lnk'
+    try {
+        $wsh = New-Object -ComObject WScript.Shell
+        $lnk = $wsh.CreateShortcut($lnkPath)
+        $lnk.TargetPath       = $pycharm.FullName
+        $lnk.Arguments        = "`"$MineaiDir`""
+        $lnk.WorkingDirectory = $MineaiDir
+        $lnk.IconLocation     = "$($pycharm.FullName),0"
+        $lnk.Description       = 'Open mineai-toolkit in PyCharm'
+        $lnk.Save()
+        Write-Host "[OK] PyCharm shortcut created: $lnkPath"
+    } catch {
+        Write-Host "[!] Could not create the PyCharm shortcut: $($_.Exception.Message)"
+    }
+} else {
+    Write-Host '[!] PyCharm or mineai-toolkit folder not found, skipping the shortcut'
+}
 '@
 Set-TextNoBom -Path $mcpInit -Content $mcpInitContent
 
