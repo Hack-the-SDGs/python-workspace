@@ -21,8 +21,8 @@ $ProjectDir = if ($NoDDrive) { Join-Path ([Environment]::GetFolderPath('Desktop'
 $NotesUrl   = 'https://hackmd.io/@NTUST-CSIE-CAMP/book'
 $VmwareUrl  = 'https://drive.smashit.tw/public.php/dav/files/HMiX8wsbcPpk2KR/?accept=zip'
 $VmwareExe  = Join-Path $TempDir 'VMware-Workstation-Full-26H1-25388281.exe'
-$HmclUrl    = 'https://github.com/Hack-the-SDGs/HMCL/releases/download/v3.14.5/HMCL-3.14.5.exe'
-$HmclExe    = Join-Path $TempDir 'HMCL-3.14.5.exe'
+$HmclUrl    = 'https://github.com/Hack-the-SDGs/HMCL/releases/latest/download/HMCL.exe'
+$HmclExe    = Join-Path $TempDir 'HMCL.exe'
 $McVersion  = '26.1.2'
 $MineaiRepoUrl = 'https://github.com/Hack-the-SDGs/Mineai-toolkit'  # MCP server (Minecraft AI class)
 $MineaiDir     = Join-Path $TempDir 'Mineai-toolkit'                # clone lives inside the Hack-the-SDGs folder
@@ -155,6 +155,8 @@ if ($VmwareInstalled) {
     Write-Output 'VMware NOT installed'
     $hasVmware = Get-File -Url $VmwareUrl -Path $VmwareExe
 }
+# Always fetch the latest release: drop any previously downloaded HMCL exe first
+Remove-Item (Join-Path $TempDir 'HMCL*.exe') -Force -ErrorAction SilentlyContinue
 Get-File -Url $HmclUrl -Path $HmclExe | Out-Null
 
 Write-Step 'Creating the student handbook shortcut'
