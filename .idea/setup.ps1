@@ -147,7 +147,7 @@ Write-Ok 'PATH updated (git / uv should now be callable)'
 
 # ---------- Step 4: downloads and the handbook shortcut ----------
 # Re-runs: skip the 280 MB download and the installer when VMware is already on the machine
-$VmwareInstalled = (Test-Path "${env:ProgramFiles(x86)}\VMware\VMware Workstation\vmware.exe") -or (Test-Path "$env:ProgramFiles\VMware\VMware Workstation\vmware.exe")
+$VmwareInstalled = (Test-Path "C:\Program Files(x86)\VMware\VMware Workstation\vmware.exe") -or (Test-Path "C:\Program Files\VMware\VMware Workstation\vmware.exe")
 if ($VmwareInstalled) {
     Write-Ok 'VMware Workstation already installed, skipping download'
     $hasVmware = $false
