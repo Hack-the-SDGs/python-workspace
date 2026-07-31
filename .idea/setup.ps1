@@ -426,6 +426,11 @@ Write-Host "  System display language : $((Get-WinSystemLocale).DisplayName)" -F
 Write-Host ''
 Write-Host '============================================================' -ForegroundColor Green
 
+# ---------- Step 9: cleanup ----------
+Write-Step 'Removing installer files'
+Remove-Item $VmwareExe, $setupLocal -Force -ErrorAction SilentlyContinue
+Write-Ok 'VMware installer and the downloaded setup.ps1 removed'
+
 if ($NoDDrive) {
     Write-Host ''
     Write-Host '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!' -ForegroundColor Red
