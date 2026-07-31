@@ -146,7 +146,14 @@ Update-SessionPath
 Write-Ok 'PATH updated (git / uv should now be callable)'
 
 # ---------- Step 4: downloads and the handbook shortcut ----------
-$hasVmware = Get-File -Url $VmwareUrl -Path $VmwareExe
+# Re-runs: skip the 280 MB download and the installer when VMware is already on the machine
+$VmwareInstalled = (Test-Path "${env:ProgramFiles(x86)}\VMware\VMware Workstation\vmware.exe") -or (Test-Path "$env:ProgramFiles\VMware\VMware Workstation\vmware.exe")
+if ($VmwareInstalled) {
+    Write-Ok 'VMware Workstation already installed, skipping download'
+    $hasVmware = $false
+} else {
+    $hasVmware = Get-File -Url $VmwareUrl -Path $VmwareExe
+}
 Get-File -Url $HmclUrl -Path $HmclExe | Out-Null
 
 Write-Step 'Creating the student handbook shortcut'
@@ -199,6 +206,8 @@ if ((Test-Path $faviconSrc) -and (Test-Path $TempDir)) {
     if (Test-Path $oldFavicon) { Remove-Item $oldFavicon -Force; Write-Host 'Removed legacy favicon0716110357.ico' }
 
     $faviconDst = Join-Path $TempDir 'favicon.ico'
+    # Re-runs: the old copy is Hidden and Copy-Item -Force cannot overwrite a hidden file
+    if (Test-Path $faviconDst) { attrib -H $faviconDst }
     Copy-Item -Path $faviconSrc -Destination $faviconDst -Force
     Set-ItemProperty -Path $faviconDst -Name Attributes -Value ([IO.FileAttributes]::Hidden)
 
@@ -259,8 +268,12 @@ if ($pycharm) {
     $lnk.Save()
     Write-Host "[OK] PyCharm shortcut placed in $TempDir"
 
-    Start-Process -FilePath $pycharm.FullName -ArgumentList "`"$ProjectDir`""
-    Write-Host "Opened $ProjectDir in PyCharm"
+    if (Get-Process pycharm64 -ErrorAction SilentlyContinue) {
+        Write-Host 'PyCharm is already running, not opening a second window'
+    } else {
+        Start-Process -FilePath $pycharm.FullName -ArgumentList "`"$ProjectDir`""
+        Write-Host "Opened $ProjectDir in PyCharm"
+    }
 } else {
     Write-Host "[!] PyCharm not found, please open $ProjectDir manually (a fresh install may need a re-login before it lands on the expected path)"
 }
@@ -311,7 +324,9 @@ Invoke-AsInteractiveUser -File $mcpInit
 Write-Ok 'mineai-toolkit init finished'
 
 # ---------- Step 7: VMware Workstation installer (elevated, blocking GUI, so it goes last) ----------
-if ($hasVmware) {
+if ($VmwareInstalled) {
+    Write-Ok 'VMware Workstation already installed, installer skipped'
+} elseif ($hasVmware) {
     Write-Step 'Launching the VMware Workstation installer as administrator'
     Write-Note 'Complete the installer wizard; this script waits until it exits.'
     try {
@@ -329,7 +344,7 @@ Write-Step 'Adding English (US) language and keyboard'
 
 $currentList = Get-WinUserLanguageList
 
-Write-Host "$logTag Current languages:"
+Write-Host 'Current languages:'
 foreach ($lang in $currentList) {
     $tips = ($lang.InputMethodTips -join ', ')
     if (-not $tips) { $tips = '(default)' }
