@@ -152,6 +152,7 @@ if ($VmwareInstalled) {
     Write-Ok 'VMware Workstation already installed, skipping download'
     $hasVmware = $false
 } else {
+    Write-Output 'VMware NOT installed'
     $hasVmware = Get-File -Url $VmwareUrl -Path $VmwareExe
 }
 Get-File -Url $HmclUrl -Path $HmclExe | Out-Null
