@@ -255,6 +255,13 @@ $pycharm = Get-ChildItem -Path @(
 ) -Recurse -Filter 'pycharm64.exe' -ErrorAction SilentlyContinue | Select-Object -First 1
 
 if ($pycharm) {
+    # Drop a PyCharm shortcut into the desktop working folder; it opens the workspace directly
+    $lnk = (New-Object -ComObject WScript.Shell).CreateShortcut((Join-Path $TempDir 'PyCharm.lnk'))
+    $lnk.TargetPath = $pycharm.FullName
+    $lnk.Arguments  = "`"$ProjectDir`""
+    $lnk.Save()
+    Write-Host "[OK] PyCharm shortcut placed in $TempDir"
+
     Start-Process -FilePath $pycharm.FullName -ArgumentList "`"$ProjectDir`""
     Write-Host "Opened $ProjectDir in PyCharm"
 } else {
